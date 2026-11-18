@@ -1,0 +1,9 @@
+# CPU architecture
+WORD_SIZE = 32
+REGISTER_COUNT = 64
+
+# Instruction encoding
+INSTRUCTION_SIZE = 32
+OPCODE_SIZE = 5
+REGISTER_ID_SIZE = 6
+IMMEDIATE_SIZE = 12
