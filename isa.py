@@ -57,3 +57,8 @@ IMMEDIATE_SHIFT = I_PADDING_SIZE
 OPCODE_MASK = (1 << OPCODE_SIZE) - 1
 REGISTER_MASK = (1 << REGISTER_ID_SIZE) - 1
 IMMEDIATE_MASK = (1 << IMMEDIATE_SIZE) - 1
+
+R_TYPE_OPERATIONS = {
+    "add", "sub", "mul", "div",
+    "and", "or", "xor"
+}
