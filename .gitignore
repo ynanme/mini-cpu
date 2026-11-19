@@ -1,1 +1,10 @@
+# Python
 __pycache__/
+
+# Assembly and machine code
+*.asm
+*.bin
+
+# Versioned examples
+!examples/*.asm
+!examples/*.bin
