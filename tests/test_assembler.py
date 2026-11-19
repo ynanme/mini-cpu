@@ -1,6 +1,6 @@
 import unittest
 
-from assembler import encode_r_type, encode_i_type
+from assembler import encode_r_type, encode_i_type, encode_memory_type
 from isa import IMMEDIATE_SHIFT, IMMEDIATE_MASK
 
 
@@ -62,6 +62,34 @@ class TestImmediateEncoding(unittest.TestCase):
     def test_invalid_register(self):
         with self.assertRaises(ValueError):
             encode_i_type("addi", 64, 2, 10)
+
+
+class TestMemoryEncoding(unittest.TestCase):
+
+    def test_load_word(self):
+        encoded = encode_memory_type("lw", 1, 2, 8)
+
+        expected = 0b01110_000001_000010_000000001000_000
+
+        self.assertEqual(encoded, expected)
+
+    def test_store_word_negative_offset(self):
+        encoded = encode_memory_type("sw", 3, 5, -4)
+
+        expected = 0b01111_000011_000101_111111111100_000
+
+        self.assertEqual(encoded, expected)
+
+    def test_invalid_offset(self):
+        with self.assertRaises(ValueError):
+            encode_memory_type("lw", 1, 2, 2048)
+
+        with self.assertRaises(ValueError):
+            encode_memory_type("sw", 1, 2, -2049)
+
+    def test_invalid_operation(self):
+        with self.assertRaises(ValueError):
+            encode_memory_type("addi", 1, 2, 8)
 
 
 if __name__ == "__main__":
