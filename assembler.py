@@ -64,3 +64,12 @@ def encode_memory_type(operation: str, r1: int, r2: int, offset: int) -> int:
         raise ValueError(f"Invalid memory operation: {operation}")
 
     return _encode_i_format(operation, r1, r2, offset, signed=True)
+
+
+def encode_branch_type(operation: str, r1: int, r2: int, address: int) -> int:
+    """Encode a conditional branch instruction."""
+
+    if operation not in BRANCH_OPERATIONS:
+        raise ValueError(f"Invalid branch operation: {operation}")
+
+    return _encode_i_format(operation, r1, r2, address, signed=False)

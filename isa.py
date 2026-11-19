@@ -69,3 +69,4 @@ UNSIGNED_IMMEDIATE_OPERATIONS = {
     "andi", "ori", "xori"
 }
 MEMORY_OPERATIONS = {"lw", "sw"}
+BRANCH_OPERATIONS = {"beq", "bne", "blo", "bgt"}

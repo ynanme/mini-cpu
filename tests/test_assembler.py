@@ -1,6 +1,6 @@
 import unittest
 
-from assembler import encode_r_type, encode_i_type, encode_memory_type
+from assembler import encode_r_type, encode_i_type, encode_memory_type, encode_branch_type
 from isa import IMMEDIATE_SHIFT, IMMEDIATE_MASK
 
 
@@ -90,6 +90,34 @@ class TestMemoryEncoding(unittest.TestCase):
     def test_invalid_operation(self):
         with self.assertRaises(ValueError):
             encode_memory_type("addi", 1, 2, 8)
+
+
+class TestBranchEncoding(unittest.TestCase):
+
+    def test_beq_encoding(self):
+        encoded = encode_branch_type("beq", 1, 2, 5)
+
+        expected = 0b10000_000001_000010_000000000101_000
+
+        self.assertEqual(encoded, expected)
+
+    def test_bgt_encoding(self):
+        encoded = encode_branch_type("bgt", 3, 4, 100)
+
+        expected = 0b10011_000011_000100_000001100100_000
+
+        self.assertEqual(encoded, expected)
+
+    def test_invalid_address(self):
+        with self.assertRaises(ValueError):
+            encode_branch_type("beq", 1, 2, -1)
+
+        with self.assertRaises(ValueError):
+            encode_branch_type("beq", 1, 2, 4096)
+
+    def test_invalid_operation(self):
+        with self.assertRaises(ValueError):
+            encode_branch_type("addi", 1, 2, 5)
 
 
 if __name__ == "__main__":
