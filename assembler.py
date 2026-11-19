@@ -198,3 +198,37 @@ def parse_program(source: str) -> tuple[list[tuple], dict[str, int]]:
         instructions.append(parse_instruction(line))
 
     return instructions, labels
+
+
+def assemble_program(source: str) -> list[int]:
+    """Assemble a complete program into machine instructions."""
+
+    instructions, labels = parse_program(source)
+    machine_code = []
+
+    for operation, r1, r2, operand in instructions:
+
+        if operation in R_TYPE_OPERATIONS:
+            encoded = encode_r_type(operation, r1, r2, operand)
+
+        elif operation in SIGNED_IMMEDIATE_OPERATIONS | UNSIGNED_IMMEDIATE_OPERATIONS:
+            encoded = encode_i_type(operation, r1, r2, operand)
+
+        elif operation in MEMORY_OPERATIONS:
+            encoded = encode_memory_type(operation, r1, r2, operand)
+
+        elif operation in BRANCH_OPERATIONS:
+            if isinstance(operand, str):
+                if operand not in labels:
+                    raise ValueError(f"Undefined label: {operand}")
+
+                operand = labels[operand]
+
+            encoded = encode_branch_type(operation, r1, r2, operand)
+
+        else:
+            raise ValueError(f"Unknown instruction: {operation}")
+
+        machine_code.append(encoded)
+
+    return machine_code

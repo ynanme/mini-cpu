@@ -7,6 +7,7 @@ from assembler import (
     encode_branch_type,
     parse_instruction,
     parse_program,
+    assemble_program
 )
 from isa import IMMEDIATE_SHIFT, IMMEDIATE_MASK
 
@@ -220,6 +221,59 @@ class TestProgramParsing(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             parse_program(source)
+
+
+class TestProgramAssembly(unittest.TestCase):
+
+    def test_backward_label(self):
+        source = """
+            addi $1, $0, 5
+
+        loop:
+            subi $1, $1, 1
+            bne $1, $0, loop
+        """
+
+        machine_code = assemble_program(source)
+
+        self.assertEqual(len(machine_code), 3)
+
+        self.assertEqual(
+            machine_code[2],
+            0b10001_000001_000000_000000000001_000,
+        )
+
+    def test_forward_label(self):
+        source = """
+            beq $1, $2, end
+            addi $3, $0, 10
+
+        end:
+            xor $4, $4, $4
+        """
+
+        machine_code = assemble_program(source)
+
+        self.assertEqual(
+            machine_code[0],
+            0b10000_000001_000010_000000000010_000,
+        )
+
+    def test_numeric_branch_address(self):
+        source = "beq $1, $2, 15"
+
+        machine_code = assemble_program(source)
+
+        self.assertEqual(
+            machine_code[0],
+            0b10000_000001_000010_000000001111_000,
+        )
+
+    def test_undefined_label(self):
+        source = "beq $1, $2, missing"
+
+        with self.assertRaises(ValueError):
+            assemble_program(source)
 
 
 if __name__ == "__main__":
