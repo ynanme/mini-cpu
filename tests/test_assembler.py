@@ -1,6 +1,13 @@
 import unittest
 
-from assembler import encode_r_type, encode_i_type, encode_memory_type, encode_branch_type, parse_instruction
+from assembler import (
+    encode_r_type,
+    encode_i_type,
+    encode_memory_type,
+    encode_branch_type,
+    parse_instruction,
+    parse_program,
+)
 from isa import IMMEDIATE_SHIFT, IMMEDIATE_MASK
 
 
@@ -152,6 +159,67 @@ class TestInstructionParsing(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             parse_instruction("add $1, $2")
+
+
+class TestProgramParsing(unittest.TestCase):
+
+    def test_program_with_labels(self):
+        source = """
+            addi $1, $0, 5
+
+        loop:
+            subi $1, $1, 1
+            bne $1, $0, loop
+
+        end:
+        """
+
+        instructions, labels = parse_program(source)
+
+        self.assertEqual(len(instructions), 3)
+        self.assertEqual(labels, {"loop": 1, "end": 3})
+
+        self.assertEqual(
+            instructions[2],
+            ("bne", 1, 0, "loop"),
+        )
+
+    def test_comments_and_empty_lines(self):
+        source = """
+            # Initialize registers
+            addi $1, $0, 10
+
+            # Perform addition
+            add $2, $1, $1  # Double the value
+        """
+
+        instructions, labels = parse_program(source)
+
+        self.assertEqual(len(instructions), 2)
+        self.assertEqual(labels, {})
+
+    def test_inline_label(self):
+        source = """
+            addi $1, $0, 5
+        loop: subi $1, $1, 1
+            bne $1, $0, loop
+        """
+
+        instructions, labels = parse_program(source)
+
+        self.assertEqual(labels["loop"], 1)
+        self.assertEqual(len(instructions), 3)
+
+    def test_duplicate_label(self):
+        source = """
+        loop:
+            addi $1, $0, 5
+        loop:
+            subi $1, $1, 1
+        """
+
+        with self.assertRaises(ValueError):
+            parse_program(source)
 
 
 if __name__ == "__main__":

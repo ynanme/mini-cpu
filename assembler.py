@@ -157,3 +157,44 @@ def parse_instruction(line: str) -> tuple:
     immediate = int(operands[2])
 
     return operation, r1, r2, immediate
+
+
+def parse_program(source: str) -> tuple[list[tuple], dict[str, int]]:
+    """Parse assembly source and collect label addresses."""
+
+    instructions = []
+    labels = {}
+
+    for line_number, line in enumerate(source.splitlines(), start=1):
+
+        # Remove comments and surrounding whitespace
+        line = line.split("#", 1)[0].strip()
+
+        if not line:
+            continue
+
+        # Handle labels
+        if ":" in line:
+            label, _, line = line.partition(":")
+            label = label.strip()
+
+            if not re.fullmatch(r"[A-Za-z_]\w*", label):
+                raise ValueError(
+                    f"Invalid label '{label}' at line {line_number}"
+                )
+
+            if label in labels:
+                raise ValueError(
+                    f"Duplicate label '{label}' at line {line_number}"
+                )
+
+            labels[label] = len(instructions)
+            line = line.strip()
+
+            if not line:
+                continue
+
+        # Parse instruction
+        instructions.append(parse_instruction(line))
+
+    return instructions, labels
