@@ -49,7 +49,6 @@ I_PADDING_SIZE = 3
 OPCODE_SHIFT = 27
 R1_SHIFT = 21
 R2_SHIFT = 15
-
 R3_SHIFT = R_PADDING_SIZE
 IMMEDIATE_SHIFT = I_PADDING_SIZE
 
@@ -58,7 +57,14 @@ OPCODE_MASK = (1 << OPCODE_SIZE) - 1
 REGISTER_MASK = (1 << REGISTER_ID_SIZE) - 1
 IMMEDIATE_MASK = (1 << IMMEDIATE_SIZE) - 1
 
+# Operation types
 R_TYPE_OPERATIONS = {
     "add", "sub", "mul", "div",
     "and", "or", "xor"
+}
+SIGNED_IMMEDIATE_OPERATIONS = {
+    "addi", "subi", "muli", "divi"
+}
+UNSIGNED_IMMEDIATE_OPERATIONS = {
+    "andi", "ori", "xori"
 }
