@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 
 from pathlib import Path
@@ -30,24 +32,33 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     assemble_parser.add_argument(
-        "-o", "--output",
-        type=Path,
-        help="Output machine code file",
+        "--emit-bits",
+        action="store_true",
+        help="Also generate a human-readable binary file",
     )
 
     args = parser.parse_args(argv)
 
     if args.command == "assemble":
         source_path = args.input
-        output_path = args.output or source_path.with_suffix(".bin")
-
-        if output_path.exists():
-            parser.error(f"Output file already exists: {output_path}")
+        output_path = source_path.with_suffix(".bin")
 
         try:
             source = source_path.read_text(encoding="utf-8")
             machine_code = assemble_program(source)
+
             write_machine_code(output_path, machine_code)
+
+            if args.emit_bits:
+                bits_path = source_path.with_suffix(".bits")
+
+                bits = "".join(
+                    f"{instruction:032b}\n"
+                    for instruction in machine_code
+                )
+
+                bits_path.write_text(bits, encoding="utf-8")
+
         except (OSError, ValueError) as error:
             parser.error(str(error))
 
