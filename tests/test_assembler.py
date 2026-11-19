@@ -1,6 +1,6 @@
 import unittest
 
-from assembler import encode_r_type, encode_i_type, encode_memory_type, encode_branch_type
+from assembler import encode_r_type, encode_i_type, encode_memory_type, encode_branch_type, parse_instruction
 from isa import IMMEDIATE_SHIFT, IMMEDIATE_MASK
 
 
@@ -118,6 +118,40 @@ class TestBranchEncoding(unittest.TestCase):
     def test_invalid_operation(self):
         with self.assertRaises(ValueError):
             encode_branch_type("addi", 1, 2, 5)
+
+
+class TestInstructionParsing(unittest.TestCase):
+
+    def test_register_instruction(self):
+        result = parse_instruction("add $1, $2, $3")
+        self.assertEqual(result, ("add", 1, 2, 3))
+
+    def test_immediate_instruction(self):
+        result = parse_instruction("subi $3, $4, -5")
+        self.assertEqual(result, ("subi", 3, 4, -5))
+
+    def test_memory_instruction(self):
+        result = parse_instruction("lw $1, 8($2)")
+        self.assertEqual(result, ("lw", 1, 2, 8))
+
+    def test_memory_without_offset(self):
+        result = parse_instruction("sw $3, ($0)")
+        self.assertEqual(result, ("sw", 3, 0, 0))
+
+    def test_branch_instruction(self):
+        result = parse_instruction("beq $1, $2, end")
+        self.assertEqual(result, ("beq", 1, 2, "end"))
+
+    def test_comments(self):
+        result = parse_instruction("add $1, $2, $3 # Addition")
+        self.assertEqual(result, ("add", 1, 2, 3))
+
+    def test_invalid_instruction(self):
+        with self.assertRaises(ValueError):
+            parse_instruction("unknown $1, $2, $3")
+
+        with self.assertRaises(ValueError):
+            parse_instruction("add $1, $2")
 
 
 if __name__ == "__main__":
