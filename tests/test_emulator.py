@@ -2,7 +2,7 @@ import unittest
 
 from emulator import CPU
 from isa import REGISTER_COUNT, WORD_SIZE
-from assembler import encode_r_type, encode_i_type
+from assembler import encode_r_type, encode_i_type, encode_memory_type
 
 
 class TestCPUState(unittest.TestCase):
@@ -117,7 +117,75 @@ class TestRegisterExecution(unittest.TestCase):
         cpu = CPU()
 
         with self.assertRaises(NotImplementedError):
-            cpu.execute_instruction(encode_i_type("addi", 1, 0, 5))
+            cpu.execute_instruction(encode_memory_type("lw", 1, 0, 5))
+
+
+class TestImmediateExecution(unittest.TestCase):
+
+    def test_addi_negative(self):
+        cpu = CPU()
+        cpu.write_register(2, 10)
+
+        cpu.execute_instruction(encode_i_type("addi", 1, 2, -5))
+
+        self.assertEqual(cpu.registers[1], 5)
+
+    def test_subi_negative(self):
+        cpu = CPU()
+        cpu.write_register(2, 10)
+
+        cpu.execute_instruction(encode_i_type("subi", 1, 2, -5))
+
+        self.assertEqual(cpu.registers[1], 15)
+
+    def test_muli_overflow(self):
+        cpu = CPU()
+        cpu.write_register(2, 0x80000000)
+
+        cpu.execute_instruction(encode_i_type("muli", 1, 2, 2))
+
+        self.assertEqual(cpu.registers[1], 0)
+
+    def test_signed_divi(self):
+        cpu = CPU()
+        cpu.write_register(2, -7)
+
+        cpu.execute_instruction(encode_i_type("divi", 1, 2, -2))
+
+        self.assertEqual(cpu.registers[1], 3)
+
+    def test_bitwise_immediates(self):
+        cases = [
+            ("andi", 0xFFFFFFFF, 4095, 4095),
+            ("ori", 0x1000, 0xF00, 0x1F00),
+            ("xori", 0b1100, 0b1010, 0b0110),
+        ]
+
+        for operation, value, immediate, expected in cases:
+            with self.subTest(operation=operation):
+                cpu = CPU()
+                cpu.write_register(2, value)
+
+                cpu.execute_instruction(
+                    encode_i_type(operation, 1, 2, immediate)
+                )
+
+                self.assertEqual(cpu.registers[1], expected)
+
+    def test_division_by_zero(self):
+        cpu = CPU()
+        cpu.write_register(2, 10)
+
+        with self.assertRaises(ZeroDivisionError):
+            cpu.execute_instruction(encode_i_type("divi", 1, 2, 0))
+
+    def test_zero_register(self):
+        cpu = CPU()
+        cpu.write_register(2, 10)
+
+        cpu.execute_instruction(encode_i_type("addi", 0, 2, 5))
+
+        self.assertEqual(cpu.registers[0], 0)
 
 
 if __name__ == "__main__":

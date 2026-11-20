@@ -33,30 +33,35 @@ class CPU:
         self.registers[index] = value & WORD_MASK
 
     def execute_instruction(self, instruction: int) -> None:
-        """Decode and execute a machine instruction."""
+        """Decode and execute an arithmetic or logical instruction."""
 
         operation, r1, r2, operand = decode_instruction(instruction)
 
-        if operation not in R_TYPE_OPERATIONS:
-            raise NotImplementedError(
-                f"Unsupported instruction: {operation}"
-            )
+        is_r_type = operation in R_TYPE_OPERATIONS
+        is_i_type = operation in (
+            SIGNED_IMMEDIATE_OPERATIONS | UNSIGNED_IMMEDIATE_OPERATIONS
+        )
+
+        if not (is_r_type or is_i_type):
+            raise NotImplementedError(f"Unsupported instruction: {operation}")
 
         a = self.registers[r2]
-        b = self.registers[operand]
+        b = self.registers[operand] if is_r_type else operand
 
-        if operation == "add":
+        base_operation = operation[:-1] if is_i_type else operation
+
+        if base_operation == "add":
             result = a + b
 
-        elif operation == "sub":
+        elif base_operation == "sub":
             result = a - b
 
-        elif operation == "mul":
+        elif base_operation == "mul":
             result = a * b
 
-        elif operation == "div":
+        elif base_operation == "div":
             a = _to_signed(a)
-            b = _to_signed(b)
+            b = _to_signed(b & WORD_MASK)
 
             if b == 0:
                 raise ZeroDivisionError("Division by zero")
@@ -65,13 +70,13 @@ class CPU:
 
             result = -quotient if (a < 0) != (b < 0) else quotient
 
-        elif operation == "and":
+        elif base_operation == "and":
             result = a & b
 
-        elif operation == "or":
+        elif base_operation == "or":
             result = a | b
 
-        elif operation == "xor":
+        elif base_operation == "xor":
             result = a ^ b
 
         self.write_register(r1, result)
