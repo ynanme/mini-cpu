@@ -70,3 +70,8 @@ UNSIGNED_IMMEDIATE_OPERATIONS = {
 }
 MEMORY_OPERATIONS = {"lw", "sw"}
 BRANCH_OPERATIONS = {"beq", "bne", "blo", "bgt"}
+
+# Emulator
+
+WORD_MASK = (1 << WORD_SIZE) - 1
+MEMORY_SIZE = 1024
