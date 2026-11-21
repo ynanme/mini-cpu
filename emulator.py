@@ -20,6 +20,35 @@ class CPU:
         self.registers = [0] * REGISTER_COUNT
         self.memory = [0] * MEMORY_SIZE
         self.pc = 0
+        self.program = []
+    
+    def load_program(self, program: list[int]) -> None:
+        """Load machine instructions and reset the program counter."""
+
+        self.program = list(program)
+        self.pc = 0
+    
+    def step(self) -> bool:
+        """Execute the next instruction and update the program counter."""
+
+        if self.pc == len(self.program):
+            return False
+
+        if not 0 <= self.pc < len(self.program):
+            raise IndexError(f"Invalid program counter: {self.pc}")
+
+        instruction = self.program[self.pc]
+
+        target = self.execute_instruction(instruction)
+
+        next_pc = self.pc + 1 if target is None else target
+
+        if not 0 <= next_pc <= len(self.program):
+            raise IndexError(f"Invalid branch target: {next_pc}")
+
+        self.pc = next_pc
+
+        return True
 
     def write_register(self, index: int, value: int) -> None:
         """Write a 32-bit value to a register."""

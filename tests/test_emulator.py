@@ -2,7 +2,7 @@ import unittest
 
 from emulator import CPU
 from isa import REGISTER_COUNT, WORD_SIZE
-from assembler import encode_r_type, encode_i_type, encode_memory_type, encode_branch_type
+from assembler import encode_r_type, encode_i_type, encode_memory_type, encode_branch_type, assemble_program
 
 
 class TestCPUState(unittest.TestCase):
@@ -312,6 +312,97 @@ class TestBranchExecution(unittest.TestCase):
             encode_branch_type("beq", 1, 2, 5)
         )
 
+        self.assertEqual(cpu.pc, 0)
+
+
+class TestProgramStepping(unittest.TestCase):
+
+    def test_load_program(self):
+        cpu = CPU()
+        program = [
+            encode_i_type("addi", 1, 0, 10),
+            encode_i_type("addi", 2, 0, 20),
+        ]
+
+        cpu.load_program(program)
+
+        self.assertEqual(cpu.program, program)
+        self.assertEqual(cpu.pc, 0)
+
+    def test_sequential_execution(self):
+        cpu = CPU()
+        cpu.load_program([
+            encode_i_type("addi", 1, 0, 10),
+            encode_i_type("addi", 2, 1, 20),
+        ])
+
+        self.assertTrue(cpu.step())
+        self.assertEqual(cpu.registers[1], 10)
+        self.assertEqual(cpu.pc, 1)
+
+        self.assertTrue(cpu.step())
+        self.assertEqual(cpu.registers[2], 30)
+        self.assertEqual(cpu.pc, 2)
+
+        self.assertFalse(cpu.step())
+
+    def test_backward_branch(self):
+        cpu = CPU()
+
+        source = """
+            addi $1, $0, 2
+
+        loop:
+            subi $1, $1, 1
+            bne $1, $0, loop
+        """
+
+        cpu.load_program(assemble_program(source))
+
+        cpu.step()  # r1 = 2, PC = 1
+        cpu.step()  # r1 = 1, PC = 2
+        cpu.step()  # Branch taken, PC = 1
+
+        self.assertEqual(cpu.pc, 1)
+        self.assertEqual(cpu.registers[1], 1)
+
+        cpu.step()  # r1 = 0, PC = 2
+        cpu.step()  # Branch not taken, PC = 3
+
+        self.assertEqual(cpu.pc, 3)
+        self.assertFalse(cpu.step())
+
+    def test_branch_to_program_end(self):
+        cpu = CPU()
+
+        cpu.load_program([
+            encode_branch_type("beq", 0, 0, 2),
+            encode_i_type("addi", 1, 0, 42),
+        ])
+
+        self.assertTrue(cpu.step())
+
+        self.assertEqual(cpu.pc, 2)
+        self.assertEqual(cpu.registers[1], 0)
+        self.assertFalse(cpu.step())
+
+    def test_invalid_branch_target(self):
+        cpu = CPU()
+
+        cpu.load_program([
+            encode_branch_type("beq", 0, 0, 100),
+        ])
+
+        with self.assertRaises(IndexError):
+            cpu.step()
+
+        self.assertEqual(cpu.pc, 0)
+
+    def test_empty_program(self):
+        cpu = CPU()
+        cpu.load_program([])
+
+        self.assertFalse(cpu.step())
         self.assertEqual(cpu.pc, 0)
 
 
