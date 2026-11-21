@@ -5,7 +5,8 @@ import argparse
 from pathlib import Path
 
 from assembler import assemble_program
-from machine_code import write_machine_code
+from emulator import CPU
+from machine_code import read_machine_code, write_machine_code
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -37,6 +38,17 @@ def main(argv: list[str] | None = None) -> int:
         help="Also generate a human-readable binary file",
     )
 
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Execute a compiled machine-code program",
+    )
+
+    run_parser.add_argument(
+        "binary",
+        type=Path,
+        help="Path to the machine-code file",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "assemble":
@@ -63,6 +75,29 @@ def main(argv: list[str] | None = None) -> int:
             parser.error(str(error))
 
         print(f"Assembled {len(machine_code)} instructions into {output_path}")
+
+    elif args.command == "run":
+        instructions = read_machine_code(args.binary)
+
+        cpu = CPU()
+        cpu.load_program(instructions)
+
+        steps = cpu.run()
+
+        print(f"Instructions executed: {steps}")
+        print(f"Final PC: {cpu.pc}")
+
+        print("\nNon-zero registers:")
+
+        found = False
+
+        for index, value in enumerate(cpu.registers):
+            if value != 0:
+                print(f"${index} = {value}")
+                found = True
+
+        if not found:
+            print("(none)")
 
     return 0
 
