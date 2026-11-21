@@ -32,8 +32,8 @@ class CPU:
 
         self.registers[index] = value & WORD_MASK
 
-    def execute_instruction(self, instruction: int) -> None:
-        """Decode and execute an arithmetic or logical instruction."""
+    def execute_instruction(self, instruction: int) -> int | None:
+        """Execute an instruction and return its branch target if taken."""
 
         operation, r1, r2, operand = decode_instruction(instruction)
 
@@ -50,6 +50,24 @@ class CPU:
                 self.memory[address] = self.registers[r1]
 
             return
+        
+        if operation in BRANCH_OPERATIONS:
+            a = self.registers[r1]
+            b = self.registers[r2]
+
+            if operation == "beq":
+                taken = a == b
+
+            elif operation == "bne":
+                taken = a != b
+
+            elif operation == "blo":
+                taken = a < b
+
+            elif operation == "bgt":
+                taken = _to_signed(a) > _to_signed(b)
+
+            return operand if taken else None
 
         is_r_type = operation in R_TYPE_OPERATIONS
         is_i_type = operation in (

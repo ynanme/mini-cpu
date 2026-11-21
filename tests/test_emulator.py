@@ -113,12 +113,6 @@ class TestRegisterExecution(unittest.TestCase):
 
         self.assertEqual(cpu.registers[0], 0)
 
-    def test_unsupported_instruction(self):
-        cpu = CPU()
-
-        with self.assertRaises(NotImplementedError):
-            cpu.execute_instruction(encode_branch_type("beq", 1, 0, 5))
-
 
 class TestImmediateExecution(unittest.TestCase):
 
@@ -250,6 +244,75 @@ class TestMemoryExecution(unittest.TestCase):
         )
 
         self.assertEqual(cpu.registers[0], 0)
+
+
+class TestBranchExecution(unittest.TestCase):
+
+    def test_beq_taken(self):
+        cpu = CPU()
+        cpu.write_register(1, 42)
+        cpu.write_register(2, 42)
+
+        target = cpu.execute_instruction(
+            encode_branch_type("beq", 1, 2, 5)
+        )
+
+        self.assertEqual(target, 5)
+
+    def test_beq_not_taken(self):
+        cpu = CPU()
+        cpu.write_register(1, 10)
+        cpu.write_register(2, 20)
+
+        target = cpu.execute_instruction(
+            encode_branch_type("beq", 1, 2, 5)
+        )
+
+        self.assertIsNone(target)
+
+    def test_bne(self):
+        cpu = CPU()
+        cpu.write_register(1, 10)
+        cpu.write_register(2, 20)
+
+        target = cpu.execute_instruction(
+            encode_branch_type("bne", 1, 2, 0)
+        )
+
+        self.assertEqual(target, 0)
+
+    def test_blo_unsigned(self):
+        cpu = CPU()
+        cpu.write_register(1, 1)
+        cpu.write_register(2, -1)
+
+        target = cpu.execute_instruction(
+            encode_branch_type("blo", 1, 2, 8)
+        )
+
+        self.assertEqual(target, 8)
+
+    def test_bgt_signed(self):
+        cpu = CPU()
+        cpu.write_register(1, -1)
+        cpu.write_register(2, -2)
+
+        target = cpu.execute_instruction(
+            encode_branch_type("bgt", 1, 2, 10)
+        )
+
+        self.assertEqual(target, 10)
+
+    def test_pc_unchanged(self):
+        cpu = CPU()
+        cpu.write_register(1, 42)
+        cpu.write_register(2, 42)
+
+        cpu.execute_instruction(
+            encode_branch_type("beq", 1, 2, 5)
+        )
+
+        self.assertEqual(cpu.pc, 0)
 
 
 if __name__ == "__main__":
