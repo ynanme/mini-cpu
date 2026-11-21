@@ -28,6 +28,16 @@ class CPU:
         self.program = list(program)
         self.pc = 0
     
+    def run(self) -> int:
+        """Run the loaded program until completion."""
+
+        steps = 0
+
+        while self.step():
+            steps += 1
+
+        return steps
+
     def step(self) -> bool:
         """Execute the next instruction and update the program counter."""
 

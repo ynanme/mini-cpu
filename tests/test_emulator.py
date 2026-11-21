@@ -406,5 +406,66 @@ class TestProgramStepping(unittest.TestCase):
         self.assertEqual(cpu.pc, 0)
 
 
+class TestProgramRunning(unittest.TestCase):
+
+    def test_run_sequential_program(self):
+        cpu = CPU()
+
+        source = """
+            addi $1, $0, 10
+            addi $2, $0, 20
+            add $3, $1, $2
+        """
+
+        cpu.load_program(assemble_program(source))
+
+        steps = cpu.run()
+
+        self.assertEqual(steps, 3)
+        self.assertEqual(cpu.registers[3], 30)
+        self.assertEqual(cpu.pc, 3)
+
+    def test_run_loop(self):
+        cpu = CPU()
+
+        source = """
+            addi $1, $0, 3
+
+        loop:
+            subi $1, $1, 1
+            bne $1, $0, loop
+        """
+
+        cpu.load_program(assemble_program(source))
+
+        steps = cpu.run()
+
+        self.assertEqual(steps, 7)
+        self.assertEqual(cpu.registers[1], 0)
+        self.assertEqual(cpu.pc, 3)
+
+    def test_run_empty_program(self):
+        cpu = CPU()
+        cpu.load_program([])
+
+        self.assertEqual(cpu.run(), 0)
+
+    def test_run_after_stepping(self):
+        cpu = CPU()
+
+        cpu.load_program([
+            encode_i_type("addi", 1, 0, 10),
+            encode_i_type("addi", 2, 0, 20),
+        ])
+
+        cpu.step()
+
+        steps = cpu.run()
+
+        self.assertEqual(steps, 1)
+        self.assertEqual(cpu.registers[2], 20)
+        self.assertEqual(cpu.pc, 2)
+
+
 if __name__ == "__main__":
     unittest.main()
