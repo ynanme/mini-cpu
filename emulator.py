@@ -37,6 +37,20 @@ class CPU:
 
         operation, r1, r2, operand = decode_instruction(instruction)
 
+        if operation in MEMORY_OPERATIONS:
+            address = self.registers[r2] + operand
+
+            if not 0 <= address < MEMORY_SIZE:
+                raise IndexError(f"Invalid memory address: {address}")
+
+            if operation == "lw":
+                self.write_register(r1, self.memory[address])
+
+            elif operation == "sw":
+                self.memory[address] = self.registers[r1]
+
+            return
+
         is_r_type = operation in R_TYPE_OPERATIONS
         is_i_type = operation in (
             SIGNED_IMMEDIATE_OPERATIONS | UNSIGNED_IMMEDIATE_OPERATIONS
