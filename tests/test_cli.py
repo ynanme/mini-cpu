@@ -127,5 +127,86 @@ class TestRunCLI(unittest.TestCase):
             self.assertIn("Final PC: 3", result.stdout)
 
 
+class TestDisassembleCLI(unittest.TestCase):
+
+    def test_disassemble_program(self):
+        source = """
+            addi $1, $0, 3
+
+        loop:
+            subi $1, $1, 1
+            bne $1, $0, loop
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = Path(tmp) / "loop.bin"
+            output = Path(tmp) / "loop.dis.asm"
+
+            write_machine_code(binary, assemble_program(source))
+
+            result = subprocess.run(
+                [sys.executable, "mcpu.py", "disassemble", str(binary)],
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(output.exists())
+
+            assembly = output.read_text()
+
+            self.assertIn("label_1:", assembly)
+            self.assertIn("bne $1, $0, label_1", assembly)
+
+    def test_original_source_is_preserved(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "program.asm"
+            binary = Path(tmp) / "program.bin"
+
+            original = "addi $1, $0, 42\n"
+            source.write_text(original)
+
+            write_machine_code(binary, assemble_program(original))
+
+            result = subprocess.run(
+                [sys.executable, "mcpu.py", "disassemble", str(binary)],
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(source.read_text(), original)
+            self.assertTrue((Path(tmp) / "program.dis.asm").exists())
+
+    def test_disassembly_round_trip(self):
+        source = """
+            addi $1, $0, 5
+
+        loop:
+            subi $1, $1, 1
+            bne $1, $0, loop
+            sw $1, 10($0)
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = Path(tmp) / "program.bin"
+            output = Path(tmp) / "program.dis.asm"
+
+            original = assemble_program(source)
+            write_machine_code(binary, original)
+
+            result = subprocess.run(
+                [sys.executable, "mcpu.py", "disassemble", str(binary)],
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+            reconstructed = assemble_program(output.read_text())
+
+            self.assertEqual(reconstructed, original)
+
+
 if __name__ == "__main__":
     unittest.main()

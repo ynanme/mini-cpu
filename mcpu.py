@@ -5,6 +5,7 @@ import argparse
 from pathlib import Path
 
 from assembler import assemble_program
+from disassembler import disassemble_program
 from emulator import CPU
 from machine_code import read_machine_code, write_machine_code
 
@@ -44,6 +45,17 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     run_parser.add_argument(
+        "binary",
+        type=Path,
+        help="Path to the machine-code file",
+    )
+
+    disassemble_parser = subparsers.add_parser(
+        "disassemble",
+        help="Convert machine code into assembly",
+    )
+
+    disassemble_parser.add_argument(
         "binary",
         type=Path,
         help="Path to the machine-code file",
@@ -98,6 +110,16 @@ def main(argv: list[str] | None = None) -> int:
 
         if not found:
             print("(none)")
+    
+    elif args.command == "disassemble":
+        instructions = read_machine_code(args.binary)
+
+        assembly = disassemble_program(instructions)
+
+        output = args.binary.with_suffix(".dis.asm")
+        output.write_text(assembly + "\n", encoding="utf-8")
+
+        print(f"Disassembled {len(instructions)} instructions into {output}")
 
     return 0
 
