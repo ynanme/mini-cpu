@@ -1,14 +1,17 @@
-import unittest
-import tempfile
+import argparse
 import subprocess
 import sys
 import tempfile
+import unittest
+import tempfile
 
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
 from pathlib import Path
 
-from mcpu import main
-from machine_code import read_machine_code, write_machine_code
 from assembler import assemble_program
+from machine_code import read_machine_code, write_machine_code
+from mcpu import main, parse_selection
 
 
 class TestCLI(unittest.TestCase):
@@ -206,6 +209,56 @@ class TestDisassembleCLI(unittest.TestCase):
             reconstructed = assemble_program(output.read_text())
 
             self.assertEqual(reconstructed, original)
+
+
+class TestStateInspection(unittest.TestCase):
+    
+    def test_selection_formats_and_deduplication(self):
+        self.assertEqual(parse_selection("1,3,7", 64), [1, 3, 7])
+        self.assertEqual(parse_selection("1:4,3,10:12", 64), [1, 2, 3, 10, 11])
+        self.assertEqual(parse_selection("0:64", 64), list(range(64)))
+        self.assertEqual(parse_selection("1023", 1024), [1023])
+
+    def test_invalid_selections(self):
+        for spec, size in (
+            ("", 64), ("1,", 64), ("1:1", 64), ("4:2", 64),
+            ("64", 64), ("63:65", 64), ("-1", 64), ("1:2:3", 64),
+            ("1024", 1024),
+        ):
+            with self.subTest(spec=spec):
+                with self.assertRaises(argparse.ArgumentTypeError):
+                    parse_selection(spec, size)
+
+    def test_selected_registers_and_memory_include_zero(self):
+        source = """
+            addi $1, $0, 7
+            sub $2, $1, $1
+            sw $2, 200($0)
+            addi $3, $0, 42
+            sw $3, 201($0)
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = Path(tmp) / "program.bin"
+            write_machine_code(binary, assemble_program(source))
+            output = StringIO()
+            with redirect_stdout(output):
+                status = main([
+                    "run", str(binary), "--registers", "2,1:3",
+                    "--memory", "200:202",
+                ])
+
+        self.assertEqual(status, 0)
+        self.assertIn("$2 = 0", output.getvalue())
+        self.assertIn("$1 = 7", output.getvalue())
+        self.assertEqual(output.getvalue().count("$2 = 0"), 1)
+        self.assertIn("[200] = 0", output.getvalue())
+        self.assertIn("[201] = 42", output.getvalue())
+
+    def test_invalid_cli_selection_exits_before_execution(self):
+        with redirect_stderr(StringIO()):
+            with self.assertRaises(SystemExit) as result:
+                main(["run", "not-needed.bin", "--memory", "1024"])
+        self.assertEqual(result.exception.code, 2)
 
 
 if __name__ == "__main__":

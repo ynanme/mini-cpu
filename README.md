@@ -52,7 +52,15 @@ This additionally creates `examples/temperature_monitor.bits`, with one 32-bit i
 ./mcpu.py run examples/temperature_monitor.bin
 ```
 
-The emulator executes the program and reports the number of executed instructions, the final program counter, and all non-zero registers.
+The emulator reports the number of executed instructions, the final program counter, and non-zero registers by default.
+
+Optional state inspection:
+
+```bash
+./mcpu.py run examples/temperature_monitor.bin --registers 5:11,13,15 --memory 200:207
+```
+
+Both options accept comma-separated indices and half-open ranges (e.g. `1,3,7` or `1:10`), including locations containing zero.
 
 **Disassemble a program:**
 
@@ -262,7 +270,7 @@ for index, temperature in enumerate(samples):
 average = int(total / len(samples))  # Truncate toward zero
 ```
 
-All processing is performed by the emulated CPU using its own instruction set, with Python performing the computations.
+The monitoring algorithm is written entirely in Mini CPU assembly. Python implements the CPU that executes its instructions.
 
 ### Results
 
@@ -287,9 +295,7 @@ The status word uses two flags: bit 0 indicates overheating, while bit 1 indicat
 ./mcpu.py run examples/temperature_monitor.bin
 ```
 
-The CLI reports execution statistics and non-zero registers; the full results are stored in data memory.
-
-The CLI does not display data memory directly.
+To inspect the results stored in data memory, run the program with `--memory 200:207`.
 
 The original assembly source, compiled binary, and reconstructed assembly are available in [`examples/`](examples/).
 
